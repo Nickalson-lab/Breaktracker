@@ -1,0 +1,204 @@
+/* Custom styles to supplement Bootstrap */
+
+/* Break timer styles */
+#current-time {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+#break-status {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+}
+
+#current-break-info {
+    display: none;
+    margin-top: 1.5rem;
+}
+
+/* Chart styles */
+#break-chart {
+    width: 100%;
+    max-height: 200px;
+}
+
+/* Leaderboard styles */
+#consistency-leaderboard .bi-trophy-fill,
+#balance-leaderboard .bi-trophy-fill {
+    font-size: 1.2rem;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-secondary {
+    color: #9ca3af !important;
+}
+
+.text-info {
+    color: #0dcaf0 !important;
+}
+
+#leaderboard-period {
+    min-width: 120px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    #current-time {
+        font-size: 2rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Custom animation for break timer */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.timer-active {
+    animation: pulse 2s infinite;
+    color: var(--bs-success);
+}
+
+/* Badge animations */
+.badge {
+    transition: all 0.3s ease;
+}
+
+.badge:hover {
+    transform: scale(1.1);
+}
+
+/* Achievement styles */
+.achievement-card .card {
+    transition: all 0.3s ease;
+    border: 1px solid var(--bs-border-color);
+}
+
+.achievement-card .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+
+.achievement-icon {
+    opacity: 0.8;
+}
+
+.unlocked-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.9rem;
+}
+
+/* Tab styling */
+.nav-tabs .nav-link {
+    color: var(--bs-secondary-color);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--bs-primary);
+    font-weight: 500;
+}
+
+/* Toast styling for achievement notifications */
+.toast-container {
+    z-index: 1060;
+}
+
+.toast {
+    border: none;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    width: 300px;
+}
+
+.toast-header {
+    border-bottom: none;
+}
+
+/* Leaderboard styling */
+#leaderboard-category {
+    min-width: 140px;
+    margin-right: 0.5rem;
+}
+
+#achievement-points {
+    display: inline-block;
+    min-width: 2em;
+}
+
+/* Quote styling */
+.quote-container {
+    position: relative;
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    border-radius: 1rem;
+}
+
+.quote-text {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--bs-body-color);
+}
+
+.quote-author {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--bs-secondary-color);
+}
+
+.quote-container::before {
+    content: """;
+    position: absolute;
+    top: -30px;
+    left: 10px;
+    font-size: 120px;
+    font-family: serif;
+    color: rgba(var(--bs-primary-rgb), 0.1);
+    z-index: 0;
+}
+
+.quote-container::after {
+    content: """;
+    position: absolute;
+    bottom: -80px;
+    right: 10px;
+    font-size: 120px;
+    font-family: serif;
+    color: rgba(var(--bs-primary-rgb), 0.1);
+    z-index: 0;
+}
+
+/* Responsive quote styling */
+@media (max-width: 768px) {
+    .quote-text {
+        font-size: 1.1rem;
+    }
+    
+    .quote-container {
+        padding: 1.5rem !important;
+    }
+    
+    .quote-container::before,
+    .quote-container::after {
+        font-size: 80px;
+    }
+    
+    .quote-container::before {
+        top: -20px;
+    }
+    
+    .quote-container::after {
+        bottom: -50px;
+    }
+}

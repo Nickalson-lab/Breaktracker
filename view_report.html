@@ -1,0 +1,208 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}View Report - BreakTime Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Report: {{ report.name }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Print Report
+            </button>
+        </div>
+        <a href="{{ url_for('admin_reports') }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-arrow-left me-1"></i>Back to Reports
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Report Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ report.name }}</p>
+                <p><strong>Type:</strong> {{ report.report_type|capitalize }}</p>
+                <p><strong>Description:</strong> {{ report.description or 'No description provided.' }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Date Range:</strong> {{ report.start_date.strftime('%Y-%m-%d') }} to {{ report.end_date.strftime('%Y-%m-%d') }}</p>
+                <p><strong>Created:</strong> {{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Created By:</strong> {{ report.creator.username }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Break Time Summary</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="breakSummaryChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Total Break Time</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="display-4">
+                        {{ statistics|sum(attribute='total_break_time') // 60 }} minutes
+                    </div>
+                    <p class="text-muted">Total break time during period</p>
+                    <hr>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <h5>{{ statistics|sum(attribute='total_breaks') }}</h5>
+                            <p class="text-muted">Total Breaks</p>
+                        </div>
+                        <div class="col-6">
+                            <h5>{{ (statistics|sum(attribute='avg_break_time') / statistics|length)|int if statistics else 0 }} min</h5>
+                            <p class="text-muted">Avg Duration</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Employee Details</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Total Breaks</th>
+                        <th>Total Break Time</th>
+                        <th>Avg. Duration</th>
+                        <th>Compliance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in statistics %}
+                    <tr>
+                        <td>{{ stat.user.username }}</td>
+                        <td>{{ stat.total_breaks }}</td>
+                        <td>{{ (stat.total_break_time / 60)|int }} minutes</td>
+                        <td>{{ (stat.avg_break_time / 60)|int }} minutes</td>
+                        <td>
+                            {% if stat.avg_break_time >= 300 and stat.avg_break_time <= 900 %}
+                                <span class="badge bg-success">Optimal</span>
+                            {% elif stat.avg_break_time < 300 %}
+                                <span class="badge bg-warning">Too Short</span>
+                            {% else %}
+                                <span class="badge bg-warning">Too Long</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No data available for this report period.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Break Records</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in statistics %}
+                        {% for break in stat.breaks %}
+                        <tr>
+                            <td>{{ stat.user.username }}</td>
+                            <td>{{ break.start_time.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ break.start_time.strftime('%H:%M:%S') }}</td>
+                            <td>{{ break.end_time.strftime('%H:%M:%S') if break.end_time else 'In Progress' }}</td>
+                            <td>{{ (break.duration / 60)|int if break.duration else '-' }} min</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No break records found for this report period.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prepare break summary data
+    const users = [];
+    const breakCounts = [];
+    const breakTimes = [];
+    
+    {% for stat in statistics %}
+    users.push('{{ stat.user.username }}');
+    breakCounts.push({{ stat.total_breaks }});
+    breakTimes.push({{ (stat.total_break_time / 60)|int }});
+    {% endfor %}
+    
+    // Break Summary Chart
+    new Chart(document.getElementById('breakSummaryChart'), {
+        type: 'bar',
+        data: {
+            labels: users,
+            datasets: [
+                {
+                    label: 'Total Breaks',
+                    data: breakCounts,
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    order: 2
+                },
+                {
+                    label: 'Break Time (minutes)',
+                    data: breakTimes,
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

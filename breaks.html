@@ -1,0 +1,212 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Break Monitoring - BreakTime Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Break Monitoring</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print Report
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Filter Breaks</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('admin_breaks') }}" class="row g-3">
+            <div class="col-md-4">
+                <label for="user_id" class="form-label">Employee</label>
+                <select class="form-select" id="user_id" name="user_id">
+                    <option value="">All Employees</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}" {% if request.args.get('user_id')|int == user.id %}selected{% endif %}>
+                        {{ user.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="date_from" class="form-label">From Date</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}">
+            </div>
+            <div class="col-md-4">
+                <label for="date_to" class="form-label">To Date</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.args.get('date_to', '') }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{{ url_for('admin_breaks') }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Break Records</h5>
+        <span class="badge bg-primary">{{ breaks|length }} records</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for break in breaks %}
+                    <tr>
+                        <td>{{ break.user.username }}</td>
+                        <td>{{ break.start_time.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ break.start_time.strftime('%H:%M:%S') }}</td>
+                        <td>{{ break.end_time.strftime('%H:%M:%S') if break.end_time else 'In Progress' }}</td>
+                        <td>{{ (break.duration / 60)|int if break.duration else '-' }} min</td>
+                        <td>
+                            {% if not break.end_time %}
+                                <span class="badge bg-warning">In Progress</span>
+                            {% elif break.duration < 300 %}
+                                <span class="badge bg-danger">Too Short (< 5 min)</span>
+                            {% elif break.duration > 900 %}
+                                <span class="badge bg-danger">Too Long (> 15 min)</span>
+                            {% else %}
+                                <span class="badge bg-success">Optimal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">No break records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if breaks %}
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Break Duration Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="breakDurationChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Break Time by Day</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="breakByDayChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if breaks %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate break duration data
+    const durationLabels = ['Too Short (<5m)', 'Optimal (5-15m)', 'Too Long (>15m)'];
+    const durationData = [0, 0, 0];
+    
+    {% for break in breaks %}
+    {% if break.duration %}
+    if ({{ break.duration }} < 300) {
+        durationData[0]++;
+    } else if ({{ break.duration }} <= 900) {
+        durationData[1]++;
+    } else {
+        durationData[2]++;
+    }
+    {% endif %}
+    {% endfor %}
+    
+    // Break Duration Chart
+    new Chart(document.getElementById('breakDurationChart'), {
+        type: 'pie',
+        data: {
+            labels: durationLabels,
+            datasets: [{
+                data: durationData,
+                backgroundColor: ['#dc3545', '#28a745', '#ffc107']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Group breaks by day
+    const breaksByDay = {};
+    {% for break in breaks %}
+    {% if break.duration %}
+    const day = '{{ break.start_time.strftime('%Y-%m-%d') }}';
+    if (!breaksByDay[day]) {
+        breaksByDay[day] = 0;
+    }
+    breaksByDay[day] += {{ break.duration / 60 }};
+    {% endif %}
+    {% endfor %}
+    
+    const days = Object.keys(breaksByDay).sort();
+    const breakMinutes = days.map(day => breaksByDay[day]);
+    
+    // Break by Day Chart
+    new Chart(document.getElementById('breakByDayChart'), {
+        type: 'bar',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Break Minutes',
+                data: breakMinutes,
+                backgroundColor: 'rgba(13, 110, 253, 0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Minutes'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

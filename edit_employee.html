@@ -1,0 +1,117 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Edit Employee - BreakTime Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Edit Employee</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin_employees') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back to Employees
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Employee Information</h5>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div class="alert alert-danger">
+                    {% for message in messages %}
+                    {{ message }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('edit_employee', employee_id=employee.id) }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ employee.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ employee.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password">
+                        <div class="form-text">Leave blank to keep current password.</div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Update Employee</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Employee Break History</h5>
+                <a href="{{ url_for('admin_breaks') }}?user_id={{ employee.id }}" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for break in employee.breaks.order_by(Break.start_time.desc()).limit(5).all() %}
+                            <tr>
+                                <td>{{ break.start_time.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ break.start_time.strftime('%H:%M:%S') }}</td>
+                                <td>{{ break.end_time.strftime('%H:%M:%S') if break.end_time else 'In Progress' }}</td>
+                                <td>{{ (break.duration / 60)|int if break.duration else '-' }} min</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">No break history available.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Employee Achievements</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for user_achievement in employee.achievements.all() %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary rounded-circle p-2 me-3">
+                                <i class="bi {{ user_achievement.achievement.icon }} text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ user_achievement.achievement.name }}</h6>
+                                <small class="text-muted">{{ user_achievement.achievement.description }}</small>
+                                <div><small>Unlocked: {{ user_achievement.unlocked_at.strftime('%Y-%m-%d') }}</small></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12 text-center py-3">
+                        <p class="mb-0">No achievements unlocked yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
